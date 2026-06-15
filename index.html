@@ -4,48 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>FrostVault</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface2: #334155;
-      --surface3: #475569;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --accent: #3b82f6;
-      --accent-dim: rgba(59,130,246,0.15);
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --freezer: #3b82f6;
-      --fridge: #10b981;
-      --shelf: #f59e0b;
-      --box: #8b5cf6;
+      --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --surface3: #475569;
+      --text: #f1f5f9; --text-muted: #94a3b8;
+      --accent: #3b82f6; --accent-dim: rgba(59,130,246,0.15);
+      --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
       --radius: 14px;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100dvh;
-      max-width: 480px;
-      margin: 0 auto;
-      padding-bottom: 80px;
-      overflow-x: hidden;
+      background: var(--bg); color: var(--text);
+      min-height: 100dvh; max-width: 480px; margin: 0 auto;
+      padding-bottom: 80px; overflow-x: hidden;
     }
     /* Header */
     .header {
-      background: var(--surface);
-      padding: 14px 16px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background: var(--surface); padding: 14px 16px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
       border-bottom: 1px solid var(--surface2);
     }
     .header-left { display: flex; align-items: center; gap: 10px; }
@@ -53,267 +34,141 @@
     .header-title { font-size: 18px; font-weight: 700; }
     .header-sub { font-size: 11px; color: var(--text-muted); }
     .lang-btn {
-      background: var(--surface2);
-      border: none;
-      color: var(--text);
-      padding: 7px 13px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: 0.5px;
+      background: var(--surface2); border: none; color: var(--text);
+      padding: 7px 13px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;
     }
     /* Nav */
     .nav {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 480px;
-      background: var(--surface);
-      border-top: 1px solid var(--surface2);
-      display: flex;
-      z-index: 100;
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: var(--surface); border-top: 1px solid var(--surface2);
+      display: flex; z-index: 100;
     }
     .nav-btn {
-      flex: 1;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      padding: 10px 0 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      cursor: pointer;
-      font-size: 10px;
-      font-weight: 500;
-      transition: color 0.2s;
-      position: relative;
+      flex: 1; background: none; border: none; color: var(--text-muted);
+      padding: 10px 0 8px; display: flex; flex-direction: column;
+      align-items: center; gap: 3px; cursor: pointer;
+      font-size: 10px; font-weight: 500; transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
     }
     .nav-btn.active { color: var(--accent); }
     .nav-btn svg { width: 22px; height: 22px; stroke-width: 2; }
     .nav-btn.scan-main { color: white; }
-    .nav-btn.scan-main .scan-circle {
-      width: 52px; height: 52px;
-      background: var(--accent);
-      border-radius: 50%;
+    .scan-circle {
+      width: 52px; height: 52px; background: var(--accent); border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      margin-top: -20px;
-      border: 3px solid var(--bg);
+      margin-top: -20px; border: 3px solid var(--bg);
       box-shadow: 0 4px 16px rgba(59,130,246,0.5);
-    }
-    .nav-btn.scan-main svg { margin: 0; }
-    .nav-badge {
-      position: absolute;
-      top: 6px; right: calc(50% - 18px);
-      background: var(--danger);
-      color: white;
-      font-size: 9px;
-      font-weight: 700;
-      min-width: 16px; height: 16px;
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 4px;
     }
     /* Screens */
     .screen { display: none; padding: 14px; }
     .screen.active { display: block; }
-    /* Filter tabs */
-    .filter-tabs {
-      display: flex;
-      gap: 7px;
-      margin-bottom: 14px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      scrollbar-width: none;
+    /* Auth screen */
+    #screen-auth { padding: 40px 24px; }
+    .auth-logo { font-size: 56px; text-align: center; margin-bottom: 12px; }
+    .auth-title { font-size: 26px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    .auth-sub { font-size: 14px; color: var(--text-muted); text-align: center; margin-bottom: 32px; }
+    /* Workspace picker */
+    .ws-card {
+      background: var(--surface); border: 1px solid var(--surface2);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 8px;
+      cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+      -webkit-tap-highlight-color: transparent;
     }
+    .ws-card:active { border-color: var(--accent); }
+    .ws-name { font-size: 15px; font-weight: 600; }
+    .ws-role { font-size: 11px; color: var(--text-muted); background: var(--surface2); padding: 3px 8px; border-radius: 10px; }
+    /* Filter tabs */
+    .filter-tabs { display: flex; gap: 7px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
     .filter-tabs::-webkit-scrollbar { display: none; }
     .filter-tab {
-      flex-shrink: 0;
-      background: var(--surface2);
-      border: none;
-      color: var(--text-muted);
-      padding: 7px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      white-space: nowrap;
+      flex-shrink: 0; background: var(--surface2); border: none; color: var(--text-muted);
+      padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+      cursor: pointer; white-space: nowrap;
     }
     .filter-tab.active { background: var(--accent); color: white; }
-    .filter-tab .dot { width: 8px; height: 8px; border-radius: 50%; }
     /* Search */
     .search-wrap { position: relative; margin-bottom: 14px; }
     .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 16px; height: 16px; }
-    .search-input {
-      width: 100%; background: var(--surface); border: 1px solid var(--surface2);
-      border-radius: 10px; padding: 11px 12px 11px 36px; color: var(--text); font-size: 14px; outline: none;
-    }
+    .search-input { width: 100%; background: var(--surface); border: 1px solid var(--surface2); border-radius: 10px; padding: 11px 12px 11px 36px; color: var(--text); font-size: 14px; outline: none; }
     .search-input:focus { border-color: var(--accent); }
     /* Item cards */
     .storage-section { margin-bottom: 22px; }
-    .section-header {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-    }
+    .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .section-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .section-title { font-size: 14px; font-weight: 700; }
-    .section-count {
-      margin-left: auto;
-      background: var(--surface2);
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+    .section-count { margin-left: auto; background: var(--surface2); padding: 2px 8px; border-radius: 10px; font-size: 11px; color: var(--text-muted); }
     .item-card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 12px;
-      margin-bottom: 8px;
-      display: flex;
-      gap: 11px;
-      align-items: flex-start;
-      cursor: pointer;
-      border: 1px solid var(--surface2);
-      transition: border-color 0.15s;
+      background: var(--surface); border-radius: var(--radius); padding: 12px;
+      margin-bottom: 8px; display: flex; gap: 11px; align-items: flex-start;
+      cursor: pointer; border: 1px solid var(--surface2); transition: border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
     .item-card:active { border-color: var(--accent); }
     .item-thumb {
-      width: 54px; height: 54px;
-      border-radius: 10px;
-      background: var(--surface2);
-      flex-shrink: 0;
-      overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
+      width: 54px; height: 54px; border-radius: 10px; background: var(--surface2);
+      flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 22px;
     }
     .item-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .item-body { flex: 1; min-width: 0; }
     .item-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .item-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
     .item-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
-    .badge {
-      font-size: 10px; font-weight: 600;
-      padding: 2px 7px; border-radius: 8px;
-      white-space: nowrap;
-    }
+    .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
     .badge-code { background: var(--surface2); color: var(--text-muted); font-family: 'Courier New', monospace; font-size: 11px; }
     .badge-ok { background: #064e3b; color: #6ee7b7; }
     .badge-soon { background: #78350f; color: #fcd34d; }
     .badge-exp { background: #7f1d1d; color: #fca5a5; }
-    .badge-none { background: var(--surface2); color: var(--text-muted); }
-    .item-qty {
-      background: var(--surface2);
-      border-radius: 8px;
-      padding: 4px 8px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-      flex-shrink: 0;
-      align-self: center;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 50px 20px;
-      color: var(--text-muted);
-    }
+    .item-qty { background: var(--surface2); border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 700; flex-shrink: 0; align-self: center; }
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
     .empty-state .e-icon { font-size: 52px; margin-bottom: 12px; }
     .empty-state p { font-size: 14px; line-height: 1.5; }
-    /* Form */
-    .form-section { margin-bottom: 20px; }
-    .form-label {
-      display: block;
-      font-size: 12px; font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 7px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+    /* Forms */
+    .form-section { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.5px; }
     .form-input {
-      width: 100%; background: var(--surface2);
-      border: 1px solid transparent;
-      border-radius: 11px;
-      padding: 13px 14px;
-      color: var(--text);
-      font-size: 15px;
-      outline: none;
-      transition: border-color 0.2s;
-      font-family: inherit;
+      width: 100%; background: var(--surface2); border: 1px solid transparent;
+      border-radius: 11px; padding: 13px 14px; color: var(--text); font-size: 15px;
+      outline: none; transition: border-color 0.2s; font-family: inherit;
     }
     .form-input:focus { border-color: var(--accent); }
     select.form-input option { background: var(--surface2); }
     textarea.form-input { resize: vertical; min-height: 80px; }
-    /* Photo area */
+    /* Photo */
     .photo-area {
-      width: 100%; height: 160px;
-      background: var(--surface2);
-      border-radius: var(--radius);
-      border: 2px dashed var(--surface3);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 7px; cursor: pointer;
-      overflow: hidden; position: relative;
-      -webkit-tap-highlight-color: transparent;
+      width: 100%; height: 160px; background: var(--surface2); border-radius: var(--radius);
+      border: 2px dashed var(--surface3); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 7px; cursor: pointer;
+      overflow: hidden; position: relative; -webkit-tap-highlight-color: transparent;
     }
     .photo-area img { width: 100%; height: 100%; object-fit: cover; }
     .photo-area .pa-label { font-size: 13px; color: var(--text-muted); }
     .photo-area .pa-icon { font-size: 28px; }
-    .photo-overlay {
-      position: absolute; bottom: 8px; right: 8px;
-      background: rgba(0,0,0,0.65);
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 11px; color: white;
-      pointer-events: none;
-    }
+    .photo-overlay { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.65); border-radius: 20px; padding: 4px 10px; font-size: 11px; color: white; pointer-events: none; }
     /* Storage selector */
     .storage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .storage-opt {
-      background: var(--surface2);
-      border: 2px solid transparent;
-      border-radius: var(--radius);
-      padding: 14px 10px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      -webkit-tap-highlight-color: transparent;
+      background: var(--surface2); border: 2px solid transparent; border-radius: var(--radius);
+      padding: 14px 10px; text-align: center; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s; -webkit-tap-highlight-color: transparent;
     }
     .storage-opt.sel { border-color: var(--accent); background: var(--accent-dim); }
     .storage-opt .so-icon { font-size: 24px; margin-bottom: 5px; }
     .storage-opt .so-label { font-size: 13px; font-weight: 600; }
     /* Qty */
     .qty-row { display: flex; align-items: center; gap: 14px; }
-    .qty-btn {
-      width: 38px; height: 38px;
-      border-radius: 50%;
-      border: none;
-      background: var(--surface2);
-      color: var(--text);
-      font-size: 20px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
+    .qty-btn { width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--surface2); color: var(--text); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .qty-val { font-size: 22px; font-weight: 700; min-width: 32px; text-align: center; }
     /* Buttons */
     .btn {
-      display: flex; align-items: center; justify-content: center;
-      gap: 8px; padding: 15px 20px;
-      border-radius: var(--radius); border: none;
-      font-size: 15px; font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
-      width: 100%;
-      font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 15px 20px; border-radius: var(--radius); border: none;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s; width: 100%; font-family: inherit;
       -webkit-tap-highlight-color: transparent;
     }
     .btn:active { opacity: 0.85; transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: var(--accent); color: white; }
     .btn-success { background: var(--success); color: white; }
     .btn-danger { background: var(--danger); color: white; }
@@ -323,244 +178,130 @@
     .btn-row { display: flex; gap: 10px; }
     .btn-row .btn { flex: 1; }
     /* Code display */
-    .code-box {
-      background: var(--surface2);
-      border-radius: var(--radius);
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 14px;
-    }
-    .code-value {
-      font-family: 'Courier New', monospace;
-      font-size: 34px;
-      font-weight: 900;
-      letter-spacing: 8px;
-      color: var(--accent);
-      margin-bottom: 14px;
-    }
+    .code-box { background: var(--surface2); border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 14px; }
+    .code-value { font-family: 'Courier New', monospace; font-size: 34px; font-weight: 900; letter-spacing: 8px; color: var(--accent); margin-bottom: 14px; }
     .code-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
     #qr-canvas { border-radius: 8px; background: white; padding: 10px; max-width: 140px; }
     /* Scanner */
-    .scan-area {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: #000;
-      margin-bottom: 14px;
-    }
+    .scan-area { position: relative; width: 100%; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: #000; margin-bottom: 14px; }
     #scan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
     #scan-canvas { display: none; }
-    .scan-overlay {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      pointer-events: none;
-    }
-    .scan-frame {
-      width: 62%; height: 62%;
-      border-radius: 16px;
-      position: relative;
-    }
-    .scan-corner {
-      position: absolute;
-      width: 24px; height: 24px;
-      border-color: white;
-      border-style: solid;
-    }
+    .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .scan-frame { width: 62%; height: 62%; border-radius: 16px; position: relative; }
+    .scan-corner { position: absolute; width: 24px; height: 24px; border-color: white; border-style: solid; }
     .scan-corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
     .scan-corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
     .scan-corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
     .scan-corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
-    .scan-line-anim {
-      position: absolute;
-      left: 5%; right: 5%; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      animation: scanline 1.8s ease-in-out infinite;
-      border-radius: 2px;
-    }
+    .scan-line-anim { position: absolute; left: 5%; right: 5%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: scanline 1.8s ease-in-out infinite; border-radius: 2px; }
     @keyframes scanline { 0% { top: 8%; } 50% { top: 92%; } 100% { top: 8%; } }
-    .scan-status {
-      position: absolute;
-      bottom: 16px; left: 16px; right: 16px;
-      text-align: center;
-      font-size: 13px;
-      color: rgba(255,255,255,0.8);
-      background: rgba(0,0,0,0.5);
-      border-radius: 20px;
-      padding: 8px 16px;
-    }
-    /* Divider */
-    .or-divider {
-      display: flex; align-items: center; gap: 12px;
-      margin: 14px 0;
-      color: var(--text-muted); font-size: 12px;
-    }
-    .or-divider::before, .or-divider::after {
-      content: ''; flex: 1; height: 1px; background: var(--surface2);
-    }
+    .scan-status { position: absolute; bottom: 16px; left: 16px; right: 16px; text-align: center; font-size: 13px; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.5); border-radius: 20px; padding: 8px 16px; }
+    /* Or divider */
+    .or-divider { display: flex; align-items: center; gap: 12px; margin: 14px 0; color: var(--text-muted); font-size: 12px; }
+    .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--surface2); }
+    /* Section divider */
+    .section-divider { height: 1px; background: var(--surface2); margin: 20px 0; }
     /* Modal */
-    .modal-bg {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.75);
-      z-index: 200;
-      align-items: flex-end;
-      justify-content: center;
-    }
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: flex-end; justify-content: center; }
     .modal-bg.open { display: flex; }
-    .modal {
-      background: var(--surface);
-      width: 100%;
-      max-width: 480px;
-      border-radius: 22px 22px 0 0;
-      padding: 0 16px 24px;
-      max-height: 92dvh;
-      overflow-y: auto;
-    }
+    .modal { background: var(--surface); width: 100%; max-width: 480px; border-radius: 22px 22px 0 0; padding: 0 16px 24px; max-height: 92dvh; overflow-y: auto; }
     .modal-handle-wrap { padding: 12px 0 8px; display: flex; justify-content: center; }
     .modal-handle { width: 36px; height: 4px; background: var(--surface2); border-radius: 2px; }
     .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
-    /* Detail view */
-    .detail-photo-wrap {
-      width: 100%; height: 190px;
-      border-radius: var(--radius);
-      background: var(--surface2);
-      overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 56px;
-      margin-bottom: 14px;
-    }
+    /* Detail */
+    .detail-photo-wrap { width: 100%; height: 190px; border-radius: var(--radius); background: var(--surface2); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 56px; margin-bottom: 14px; }
     .detail-photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
     .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-    .detail-cell {
-      background: var(--surface2);
-      border-radius: 10px;
-      padding: 11px 12px;
-    }
+    .detail-cell { background: var(--surface2); border-radius: 10px; padding: 11px 12px; }
     .detail-cell.full { grid-column: 1 / -1; }
-    .dc-key {
-      font-size: 10px; font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
-      margin-bottom: 4px;
-    }
+    .dc-key { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 4px; }
     .dc-val { font-size: 14px; font-weight: 600; }
     .dc-code { font-family: 'Courier New', monospace; font-size: 18px; color: var(--accent); letter-spacing: 3px; }
-    .storage-pill {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-    }
+    .storage-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     /* History */
-    .history-card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 12px;
-      margin-bottom: 8px;
-      border: 1px solid var(--surface2);
-      opacity: 0.65;
-      display: flex; gap: 11px; align-items: flex-start;
-    }
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 88px; left: 50%;
-      transform: translateX(-50%) translateY(10px);
-      background: var(--surface2);
-      color: var(--text);
-      padding: 11px 20px;
-      border-radius: 24px;
-      font-size: 13px; font-weight: 500;
-      z-index: 500;
-      opacity: 0;
-      transition: opacity 0.25s, transform 0.25s;
-      white-space: nowrap;
-      pointer-events: none;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    /* Fasttrack result */
-    .ft-result {
-      background: var(--surface2);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 12px;
-      text-align: center;
-    }
-    .ft-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-    .ft-meta { font-size: 13px; color: var(--text-muted); }
+    .history-card { background: var(--surface); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; border: 1px solid var(--surface2); opacity: 0.65; display: flex; gap: 11px; align-items: flex-start; cursor: pointer; }
     /* Settings */
-    .setting-row {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 8px;
-      display: flex; align-items: center; justify-content: space-between;
-      border: 1px solid var(--surface2);
-    }
-    .setting-label { font-size: 14px; font-weight: 500; }
-    .setting-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .toggle {
-      position: relative;
-      width: 48px; height: 28px;
-      flex-shrink: 0;
-    }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-track {
-      position: absolute; inset: 0;
-      background: var(--surface2);
-      border-radius: 14px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .toggle input:checked + .toggle-track { background: var(--accent); }
-    .toggle-track::before {
-      content: '';
-      position: absolute;
-      width: 22px; height: 22px;
-      background: white;
-      border-radius: 50%;
-      top: 3px; left: 3px;
-      transition: transform 0.2s;
-    }
-    .toggle input:checked + .toggle-track::before { transform: translateX(20px); }
-    /* Expiry warning strip */
-    .expiry-strip {
-      background: #78350f;
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .expiry-strip .es-icon { font-size: 20px; flex-shrink: 0; }
-    .expiry-strip .es-text { font-size: 13px; color: #fcd34d; font-weight: 500; }
-    /* Scroll-to-top of modal on open */
-    .section-divider {
-      height: 1px; background: var(--surface2); margin: 16px 0;
-    }
+    .setting-section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px; }
+    .setting-row { background: var(--surface); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; border: 1px solid var(--surface2); }
+    .setting-label { font-size: 14px; font-weight: 600; }
+    .setting-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
     /* Inline input */
     .inline-input-row { display: flex; gap: 8px; }
     .inline-input-row .form-input { flex: 1; }
     .inline-input-row .btn { width: auto; padding: 13px 18px; white-space: nowrap; flex-shrink: 0; }
+    /* Fasttrack result */
+    .ft-result { background: var(--surface2); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; text-align: center; }
+    .ft-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .ft-meta { font-size: 13px; color: var(--text-muted); }
+    /* Expiry warning */
+    .expiry-strip { background: #78350f; border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .expiry-strip .es-icon { font-size: 20px; flex-shrink: 0; }
+    .expiry-strip .es-text { font-size: 13px; color: #fcd34d; font-weight: 500; }
+    /* Loading */
+    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; color: var(--text-muted); }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--surface2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Toast */
+    .toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--surface2); color: var(--text); padding: 11px 20px; border-radius: 24px; font-size: 13px; font-weight: 500; z-index: 500; opacity: 0; transition: opacity 0.25s, transform 0.25s; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
 
 <!-- Header -->
-<div class="header">
+<div class="header" id="main-header">
   <div class="header-left">
     <span class="header-logo">❄️</span>
     <div>
-      <div class="header-title" id="app-title">FrostVault</div>
-      <div class="header-sub" id="app-sub">Storage tracker</div>
+      <div class="header-title">FrostVault</div>
+      <div class="header-sub" id="header-ws-name">Loading…</div>
     </div>
   </div>
   <button class="lang-btn" onclick="toggleLang()" id="lang-btn">🇳🇴 NO</button>
 </div>
 
+<!-- Auth screen -->
+<div class="screen active" id="screen-auth">
+  <div class="auth-logo">❄️</div>
+  <div class="auth-title">FrostVault</div>
+  <div class="auth-sub" id="auth-sub-text">Sign in to continue</div>
+  <div class="form-section">
+    <label class="form-label" id="lbl-email">Email</label>
+    <input type="email" class="form-input" id="auth-email" placeholder="your@email.com" autocomplete="email">
+  </div>
+  <div class="form-section">
+    <label class="form-label" id="lbl-password">Password</label>
+    <input type="password" class="form-input" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+  </div>
+  <button class="btn btn-primary" id="auth-btn" onclick="handleAuth()" style="margin-bottom:10px">
+    <span id="auth-btn-label">Sign in</span>
+  </button>
+  <button class="btn btn-secondary" onclick="toggleAuthMode()" id="auth-toggle-btn">
+    <span id="auth-toggle-label">No account? Sign up</span>
+  </button>
+</div>
+
+<!-- Workspace picker screen -->
+<div class="screen" id="screen-workspace-picker" style="padding-bottom:30px">
+  <div class="modal-title" id="ws-picker-title">Your workspaces</div>
+  <div id="ws-list"></div>
+  <div class="section-divider"></div>
+  <div class="setting-section-title" id="ws-create-title">Create new workspace</div>
+  <div class="form-section">
+    <input type="text" class="form-input" id="ws-name-input" placeholder="e.g. SMIA Cafe, Home">
+  </div>
+  <button class="btn btn-primary" onclick="createWorkspace()" id="btn-create-ws" style="margin-bottom:20px">
+    <span id="btn-create-ws-label">Create workspace</span>
+  </button>
+  <div class="or-divider" id="ws-or-join">or join with invite code</div>
+  <div class="inline-input-row">
+    <input type="text" class="form-input" id="ws-invite-input" placeholder="ABC123" maxlength="6" style="font-family:monospace;font-size:18px;letter-spacing:4px;text-transform:uppercase">
+    <button class="btn btn-secondary" onclick="joinWorkspace()" style="width:auto" id="btn-join-ws">Join</button>
+  </div>
+</div>
+
 <!-- Home screen -->
-<div class="screen active" id="screen-home">
+<div class="screen" id="screen-home">
   <div class="search-wrap">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input class="search-input" id="search-input" oninput="renderHome()" placeholder="Search items…">
@@ -570,7 +311,7 @@
   <div id="items-list"></div>
 </div>
 
-<!-- Add Item screen -->
+<!-- Add item screen -->
 <div class="screen" id="screen-add">
   <div class="form-section">
     <label class="form-label" id="lbl-photo">Photo (optional)</label>
@@ -625,15 +366,13 @@
 
 <!-- Scan screen -->
 <div class="screen" id="screen-scan">
-  <div class="scan-area" id="scan-area">
+  <div class="scan-area">
     <video id="scan-video" autoplay playsinline muted></video>
     <canvas id="scan-canvas"></canvas>
     <div class="scan-overlay">
       <div class="scan-frame">
-        <div class="scan-corner tl"></div>
-        <div class="scan-corner tr"></div>
-        <div class="scan-corner bl"></div>
-        <div class="scan-corner br"></div>
+        <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
+        <div class="scan-corner bl"></div><div class="scan-corner br"></div>
         <div class="scan-line-anim"></div>
       </div>
     </div>
@@ -642,7 +381,7 @@
   <div class="or-divider" id="or-text">or enter code manually</div>
   <div class="inline-input-row">
     <input type="text" class="form-input" id="manual-code-input" placeholder="ABC123" maxlength="7" style="font-family:monospace;font-size:18px;letter-spacing:4px;text-transform:uppercase">
-    <button class="btn btn-secondary" onclick="lookupManualCode()" id="btn-lookup" style="width:auto">
+    <button class="btn btn-secondary" onclick="lookupManualCode()" style="width:auto">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     </button>
   </div>
@@ -656,31 +395,50 @@
 
 <!-- Settings screen -->
 <div class="screen" id="screen-settings">
-  <div class="setting-row">
+  <div class="setting-section-title" id="ss-account">Account</div>
+  <div class="setting-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <div>
-      <div class="setting-label" id="sl-lang">Language</div>
-      <div class="setting-sub" id="ss-lang">English / Norsk</div>
+      <div class="setting-label" id="settings-email">—</div>
+      <div class="setting-sub" id="ss-signed-in">Signed in</div>
     </div>
+    <button class="btn btn-danger btn-sm" onclick="signOut()" style="width:auto" id="btn-signout">Sign out</button>
+  </div>
+
+  <div class="setting-section-title" id="ss-workspace">Workspace</div>
+  <div class="setting-row" style="margin-bottom:8px">
+    <div class="setting-label" id="settings-ws-name">—</div>
+    <div class="setting-sub" id="settings-ws-role">—</div>
+    <div style="margin-top:10px">
+      <div class="dc-key" id="ss-invite-lbl">INVITE CODE</div>
+      <div class="dc-code" id="settings-invite-code" onclick="copyInviteCode()" style="cursor:pointer;font-family:monospace;font-size:20px;color:var(--accent);letter-spacing:4px;margin:4px 0">—</div>
+      <div class="setting-sub" id="ss-invite-hint">Tap to copy — share with others to join this workspace</div>
+    </div>
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="goWorkspacePicker()" style="margin-bottom:20px" id="btn-switch-ws">
+    Switch workspace
+  </button>
+
+  <div class="setting-section-title" id="ss-language-lbl">Language</div>
+  <div class="setting-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div class="setting-label">English / Norsk</div>
     <button class="lang-btn" onclick="toggleLang()" id="settings-lang-btn">🇳🇴 NO</button>
   </div>
-  <div style="height:16px"></div>
+
+  <div class="setting-section-title" id="ss-data-lbl">Data</div>
   <button class="btn btn-secondary" onclick="exportData()" style="margin-bottom:8px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <span id="btn-export">Export data (JSON)</span>
   </button>
-  <button class="btn btn-danger btn-sm" onclick="confirmClearAll()" style="margin-bottom:8px">
-    <span id="btn-clear-all">Clear all data</span>
-  </button>
+
   <div style="height:24px"></div>
-  <div style="text-align:center; color:var(--text-muted); font-size:12px">
-    <div style="font-weight:600;margin-bottom:4px">FrostVault v1.0</div>
-    <div id="about-sub">All data stored locally on this device</div>
+  <div style="text-align:center;color:var(--text-muted);font-size:12px">
+    <div style="font-weight:600;margin-bottom:4px">FrostVault v2.0</div>
+    <div>Powered by Supabase · Real-time sync</div>
   </div>
 </div>
 
 <!-- Bottom Nav -->
-<nav class="nav">
-  <button class="nav-btn active" id="nav-home" onclick="goScreen('home')">
+<nav class="nav" id="main-nav" style="display:none">
+  <button class="nav-btn" id="nav-home" onclick="goScreen('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     <span id="nav-lbl-home">Home</span>
   </button>
@@ -697,27 +455,26 @@
   <button class="nav-btn" id="nav-history" onclick="goScreen('history')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
     <span id="nav-lbl-history">History</span>
-    <span class="nav-badge" id="history-badge" style="display:none">!</span>
   </button>
   <button class="nav-btn" id="nav-settings" onclick="goScreen('settings')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     <span id="nav-lbl-settings">Settings</span>
   </button>
 </nav>
 
 <!-- Item Detail Modal -->
 <div class="modal-bg" id="detail-modal">
-  <div class="modal" id="detail-modal-body">
+  <div class="modal">
     <div class="modal-handle-wrap"><div class="modal-handle"></div></div>
     <div id="detail-content"></div>
   </div>
 </div>
 
-<!-- Code Modal (after saving) -->
+<!-- Code Modal -->
 <div class="modal-bg" id="code-modal">
   <div class="modal">
     <div class="modal-handle-wrap"><div class="modal-handle"></div></div>
-    <div class="modal-title" id="code-modal-title">Item saved! Here's your code</div>
+    <div class="modal-title" id="code-modal-title">Item saved!</div>
     <div class="code-box">
       <div class="code-value" id="code-display-val"></div>
       <div class="code-hint" id="code-hint-text">Write this code on a label and stick it to the item</div>
@@ -732,173 +489,141 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let items = JSON.parse(localStorage.getItem('fv_items') || '[]');
+// ─── Supabase ─────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://zwwadewndsbrtboymgdp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Hk3kLc8HszksnMsm489kfQ_9ouwF-D6';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let currentUser = null;
+let currentWorkspace = null;
+let items = [];
 let lang = localStorage.getItem('fv_lang') || 'en';
-let currentScreen = 'home';
+let currentScreen = 'auth';
 let scanStream = null;
 let scanAnimFrame = null;
 let capturedPhoto = null;
 let selectedStorage = 'freezer';
 let quantity = 1;
 let activeFilter = 'all';
-let editingId = null;
+let authMode = 'signin';
+let realtimeSub = null;
 
 // ─── Translations ─────────────────────────────────────────────────────────────
 const T = {
   en: {
-    appSub: 'Storage tracker',
     langToggle: '🇳🇴 NO',
+    signIn: 'Sign in', signUp: 'Sign up',
+    noAccount: 'No account? Sign up', hasAccount: 'Already have an account? Sign in',
+    authSubSignin: 'Sign in to access your storage',
+    authSubSignup: 'Create an account to get started',
+    emailLabel: 'Email', passwordLabel: 'Password',
+    wsPickerTitle: 'Your workspaces', wsCreateTitle: 'Create new workspace',
+    btnCreateWs: 'Create workspace', btnJoinWs: 'Join', wsOrJoin: 'or join with invite code',
+    wsSwitchBtn: 'Switch workspace',
     navHome: 'Home', navAdd: 'Add', navScan: 'Scan', navHistory: 'History', navSettings: 'Settings',
-    filterAll: 'All', filterFreezer: '❄️ Freezer', filterFridge: '🟢 Fridge', filterShelf: '📦 Shelf', filterBox: '🗃️ Box storage',
-    photoLabel: 'Photo (optional)',
-    tapPhoto: 'Tap to take photo',
-    changePhoto: 'Change photo',
+    filterAll: 'All', filterFreezer: '❄️ Freezer', filterFridge: '🟢 Fridge', filterShelf: '📦 Shelf', filterBox: '🗃️ Box',
+    photoLabel: 'Photo (optional)', tapPhoto: 'Tap to take photo', changePhoto: 'Change photo',
     storageLabel: 'Storage type',
     storageFreezer: 'Freezer', storageFridge: 'Fridge', storageShelf: 'Shelf', storageBox: 'Box / Crate',
-    locationLabel: 'Location / label',
-    locationPlaceholder: 'e.g. Shelf 2, Box A, Top drawer',
-    nameLabel: 'Item name *',
-    namePlaceholder: 'e.g. Chicken breast, Soup, Leftovers',
-    qtyLabel: 'Quantity',
-    sellbyLabel: 'Best before / Sell by date',
-    notesLabel: 'Notes',
-    notesPH: 'Any extra info…',
+    locationLabel: 'Location / label', locationPH: 'e.g. Shelf 2, Box A, Top drawer',
+    nameLabel: 'Item name *', namePH: 'e.g. Chicken breast, Soup, Leftovers',
+    qtyLabel: 'Quantity', sellbyLabel: 'Best before / Sell by date',
+    notesLabel: 'Notes', notesPH: 'Any extra info…',
     saveBtn: 'Save & Generate Code',
-    scanStatus: 'Point camera at QR code…',
-    orManual: 'or enter code manually',
+    scanStatus: 'Point camera at QR code…', orManual: 'or enter code manually',
     codeModalTitle: "Item saved! Here's your code",
     codeHint: 'Write this code on a label and stick it to the item',
     codeScanHint: 'Or scan the QR code with the Scan tab',
     btnDone: 'Done',
     detailAdded: 'Added', detailStorage: 'Storage', detailLocation: 'Location',
-    detailBestBefore: 'Best before', detailQty: 'Quantity', detailNotes: 'Notes',
-    detailCode: 'Code', detailStatus: 'Status',
-    statusActive: 'In storage', statusRemoved: 'Removed',
-    btnFasttrack: '⚡ Fast-track remove',
-    btnMarkRemoved: 'Mark as removed',
-    btnRestore: 'Restore item',
-    btnClose: 'Close',
+    detailBestBefore: 'Best before', detailQty: 'Quantity', detailNotes: 'Notes', detailCode: 'Code',
+    btnFasttrack: '⚡ Fast-track remove', btnMarkRemoved: 'Mark as removed',
+    btnRestore: 'Restore item', btnClose: 'Close',
     daysLeft: (n) => n === 1 ? '1 day left' : `${n} days left`,
-    daysAgo: (n) => n === 1 ? '1 day ago' : `${n} days ago`,
     expiredDaysAgo: (n) => `Expired ${n} day${n===1?'':'s'} ago`,
-    expiresLabel: 'Expires',
     emptyHome: 'No items yet.\nTap + to add your first item.',
     emptyHistory: 'No removed items yet.',
     historyTitle: 'Removed items',
-    settingsLang: 'Language',
-    settingsLangSub: 'English / Norsk',
-    exportBtn: 'Export data (JSON)',
-    clearAllBtn: 'Clear all data',
-    clearConfirm: 'Delete ALL items? This cannot be undone.',
-    aboutSub: 'All data stored locally on this device',
-    toastSaved: 'Item saved!',
-    toastRemoved: 'Item removed',
-    toastRestored: 'Item restored',
-    toastCopied: 'Code copied',
-    toastCleared: 'All data cleared',
-    fasttrackTitle: '⚡ Fast-track remove',
-    fasttrackSub: 'Item found — confirm to remove from storage',
-    ftConfirm: 'Remove from storage',
-    ftCancel: 'Cancel',
+    ssAccount: 'Account', ssWorkspace: 'Workspace', ssLanguage: 'Language', ssData: 'Data',
+    ssSignedIn: 'Signed in', ssInviteLbl: 'INVITE CODE',
+    ssInviteHint: 'Tap to copy — share with others to join this workspace',
+    btnSignout: 'Sign out', btnExport: 'Export data (JSON)',
+    toastSaved: 'Item saved!', toastRemoved: 'Item removed', toastRestored: 'Item restored',
+    toastCopied: 'Code copied', toastInviteCopied: 'Invite code copied',
     noItem: 'No item found with this code.',
     alreadyRemoved: 'This item has already been removed.',
-    scanManualBtn: 'Look up',
     expiryWarning: (n) => `${n} item${n===1?'':'s'} expiring soon or expired!`,
+    noDate: 'No date set', noLocation: '—', removedOn: 'Removed',
     units: { pcs: 'pcs', kg: 'kg', g: 'g', L: 'L', portions: 'portions', bags: 'bags', boxes: 'boxes' },
-    noDate: 'No date set',
-    noLocation: '—',
-    addedOn: 'Added',
-    removedOn: 'Removed',
-    printLabel: 'Print label',
+    invalidCode: '⚠ Invalid invite code',
+    wsRole: { owner: 'Owner', member: 'Member' },
   },
   no: {
-    appSub: 'Lager-sporing',
     langToggle: '🇬🇧 EN',
+    signIn: 'Logg inn', signUp: 'Registrer deg',
+    noAccount: 'Ingen konto? Registrer deg', hasAccount: 'Har du konto? Logg inn',
+    authSubSignin: 'Logg inn for å få tilgang til lageret ditt',
+    authSubSignup: 'Opprett konto for å komme i gang',
+    emailLabel: 'E-post', passwordLabel: 'Passord',
+    wsPickerTitle: 'Dine arbeidsområder', wsCreateTitle: 'Opprett nytt arbeidsområde',
+    btnCreateWs: 'Opprett arbeidsområde', btnJoinWs: 'Bli med', wsOrJoin: 'eller bli med med invitasjonskode',
+    wsSwitchBtn: 'Bytt arbeidsområde',
     navHome: 'Hjem', navAdd: 'Legg til', navScan: 'Skann', navHistory: 'Historikk', navSettings: 'Innstillinger',
     filterAll: 'Alle', filterFreezer: '❄️ Fryser', filterFridge: '🟢 Kjøleskap', filterShelf: '📦 Hylle', filterBox: '🗃️ Boks',
-    photoLabel: 'Bilde (valgfritt)',
-    tapPhoto: 'Trykk for å ta bilde',
-    changePhoto: 'Bytt bilde',
+    photoLabel: 'Bilde (valgfritt)', tapPhoto: 'Trykk for å ta bilde', changePhoto: 'Bytt bilde',
     storageLabel: 'Lagringstype',
     storageFreezer: 'Fryser', storageFridge: 'Kjøleskap', storageShelf: 'Hylle', storageBox: 'Boks / Kasse',
-    locationLabel: 'Sted / merking',
-    locationPlaceholder: 'f.eks. Hylle 2, Boks A, Øverste skuff',
-    nameLabel: 'Varenavn *',
-    namePlaceholder: 'f.eks. Kyllingbryst, Suppe, Rester',
-    qtyLabel: 'Antall',
-    sellbyLabel: 'Best før / Salgsdato',
-    notesLabel: 'Notater',
-    notesPH: 'Tilleggsinformasjon…',
+    locationLabel: 'Sted / merking', locationPH: 'f.eks. Hylle 2, Boks A, Øverste skuff',
+    nameLabel: 'Varenavn *', namePH: 'f.eks. Kyllingbryst, Suppe, Rester',
+    qtyLabel: 'Antall', sellbyLabel: 'Best før / Salgsdato',
+    notesLabel: 'Notater', notesPH: 'Tilleggsinformasjon…',
     saveBtn: 'Lagre og generer kode',
-    scanStatus: 'Pek kamera mot QR-kode…',
-    orManual: 'eller skriv inn kode manuelt',
+    scanStatus: 'Pek kamera mot QR-kode…', orManual: 'eller skriv inn kode manuelt',
     codeModalTitle: 'Varen er lagret! Her er koden din',
     codeHint: 'Skriv denne koden på en lapp og fest den på varen',
     codeScanHint: 'Eller skann QR-koden med Skann-fanen',
     btnDone: 'Ferdig',
     detailAdded: 'Lagt inn', detailStorage: 'Lagring', detailLocation: 'Sted',
-    detailBestBefore: 'Best før', detailQty: 'Antall', detailNotes: 'Notater',
-    detailCode: 'Kode', detailStatus: 'Status',
-    statusActive: 'På lager', statusRemoved: 'Fjernet',
-    btnFasttrack: '⚡ Hurtiguttak',
-    btnMarkRemoved: 'Merk som fjernet',
-    btnRestore: 'Gjenopprett vare',
-    btnClose: 'Lukk',
+    detailBestBefore: 'Best før', detailQty: 'Antall', detailNotes: 'Notater', detailCode: 'Kode',
+    btnFasttrack: '⚡ Hurtiguttak', btnMarkRemoved: 'Merk som fjernet',
+    btnRestore: 'Gjenopprett vare', btnClose: 'Lukk',
     daysLeft: (n) => n === 1 ? '1 dag igjen' : `${n} dager igjen`,
-    daysAgo: (n) => n === 1 ? '1 dag siden' : `${n} dager siden`,
     expiredDaysAgo: (n) => `Utgått for ${n} dag${n===1?'':'er'} siden`,
-    expiresLabel: 'Utløper',
     emptyHome: 'Ingen varer ennå.\nTrykk + for å legge til den første.',
     emptyHistory: 'Ingen fjernede varer ennå.',
     historyTitle: 'Fjernede varer',
-    settingsLang: 'Språk',
-    settingsLangSub: 'English / Norsk',
-    exportBtn: 'Eksporter data (JSON)',
-    clearAllBtn: 'Slett alle data',
-    clearConfirm: 'Slette ALLE varer? Dette kan ikke angres.',
-    aboutSub: 'Alle data lagres lokalt på denne enheten',
-    toastSaved: 'Vare lagret!',
-    toastRemoved: 'Vare fjernet',
-    toastRestored: 'Vare gjenopprettet',
-    toastCopied: 'Kode kopiert',
-    toastCleared: 'Alle data slettet',
-    fasttrackTitle: '⚡ Hurtiguttak',
-    fasttrackSub: 'Vare funnet — bekreft for å fjerne fra lager',
-    ftConfirm: 'Fjern fra lager',
-    ftCancel: 'Avbryt',
+    ssAccount: 'Konto', ssWorkspace: 'Arbeidsområde', ssLanguage: 'Språk', ssData: 'Data',
+    ssSignedIn: 'Innlogget', ssInviteLbl: 'INVITASJONSKODE',
+    ssInviteHint: 'Trykk for å kopiere — del med andre for å bli med i dette arbeidsområdet',
+    btnSignout: 'Logg ut', btnExport: 'Eksporter data (JSON)',
+    toastSaved: 'Vare lagret!', toastRemoved: 'Vare fjernet', toastRestored: 'Vare gjenopprettet',
+    toastCopied: 'Kode kopiert', toastInviteCopied: 'Invitasjonskode kopiert',
     noItem: 'Ingen vare funnet med denne koden.',
     alreadyRemoved: 'Denne varen er allerede fjernet.',
-    scanManualBtn: 'Søk',
     expiryWarning: (n) => `${n} vare${n===1?'':'r'} utløper snart eller er utgått!`,
+    noDate: 'Ingen dato satt', noLocation: '—', removedOn: 'Fjernet',
     units: { pcs: 'stk', kg: 'kg', g: 'g', L: 'L', portions: 'porsjoner', bags: 'poser', boxes: 'bokser' },
-    noDate: 'Ingen dato satt',
-    noLocation: '—',
-    addedOn: 'Lagt inn',
-    removedOn: 'Fjernet',
-    printLabel: 'Skriv ut etikett',
+    invalidCode: '⚠ Ugyldig invitasjonskode',
+    wsRole: { owner: 'Eier', member: 'Medlem' },
   }
 };
-
 function t(key, ...args) {
   const val = T[lang][key];
   return typeof val === 'function' ? val(...args) : (val ?? key);
 }
 
-// ─── Storage helpers ──────────────────────────────────────────────────────────
+// ─── Storage types ────────────────────────────────────────────────────────────
 const STORAGE_TYPES = [
   { id: 'freezer', icon: '❄️', color: '#3b82f6' },
   { id: 'fridge',  icon: '🟢', color: '#10b981' },
   { id: 'shelf',   icon: '📦', color: '#f59e0b' },
   { id: 'box',     icon: '🗃️', color: '#8b5cf6' },
 ];
-
+function storageMeta(id) { return STORAGE_TYPES.find(s => s.id === id) || STORAGE_TYPES[0]; }
 function storageLabel(id) {
   return { freezer: t('storageFreezer'), fridge: t('storageFridge'), shelf: t('storageShelf'), box: t('storageBox') }[id] || id;
 }
-function storageMeta(id) { return STORAGE_TYPES.find(s => s.id === id) || STORAGE_TYPES[0]; }
-function storageIcon(id) { return storageMeta(id).icon; }
-function storageColor(id) { return storageMeta(id).color; }
 
 // ─── Code generation ──────────────────────────────────────────────────────────
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -907,8 +632,6 @@ function genCode() {
   const arr = new Uint8Array(6);
   crypto.getRandomValues(arr);
   for (let i = 0; i < 6; i++) code += CODE_CHARS[arr[i] % CODE_CHARS.length];
-  // Ensure unique
-  if (items.some(x => x.code === code)) return genCode();
   return code;
 }
 
@@ -916,15 +639,12 @@ function genCode() {
 function today() { return new Date().toISOString().slice(0, 10); }
 function daysUntil(dateStr) {
   if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date(today());
-  return Math.round(diff / 86400000);
+  return Math.round((new Date(dateStr) - new Date(today())) / 86400000);
 }
 function formatDate(dateStr) {
   if (!dateStr) return t('noDate');
-  const d = new Date(dateStr);
-  return d.toLocaleDateString(lang === 'no' ? 'nb-NO' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(dateStr).toLocaleDateString(lang === 'no' ? 'nb-NO' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
-
 function expiryBadge(dateStr) {
   if (!dateStr) return '';
   const days = daysUntil(dateStr);
@@ -933,8 +653,240 @@ function expiryBadge(dateStr) {
   return `<span class="badge badge-ok">✓ ${t('daysLeft', days)}</span>`;
 }
 
-// ─── Persist ──────────────────────────────────────────────────────────────────
-function saveItems() { localStorage.setItem('fv_items', JSON.stringify(items)); }
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  applyLang();
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    await initWorkspace();
+  } else {
+    goScreen('auth');
+  }
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+      await initWorkspace();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      currentWorkspace = null;
+      items = [];
+      if (realtimeSub) { realtimeSub.unsubscribe(); realtimeSub = null; }
+      document.getElementById('main-nav').style.display = 'none';
+      goScreen('auth');
+    }
+  });
+}
+
+async function initWorkspace() {
+  const savedId = localStorage.getItem('fv_workspace_id');
+  if (savedId) {
+    const { data } = await sb.from('workspace_members')
+      .select('role, workspaces(id, name, invite_code)')
+      .eq('user_id', currentUser.id)
+      .eq('workspace_id', savedId)
+      .single();
+    if (data?.workspaces) {
+      currentWorkspace = { ...data.workspaces, role: data.role };
+      await loadItems();
+      subscribeRealtime();
+      document.getElementById('header-ws-name').textContent = currentWorkspace.name;
+      document.getElementById('main-nav').style.display = 'flex';
+      goScreen('home');
+      return;
+    }
+  }
+  await loadWorkspacePicker();
+  document.getElementById('main-nav').style.display = 'none';
+  goScreen('workspace-picker');
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+function toggleAuthMode() {
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  const isSignup = authMode === 'signup';
+  document.getElementById('auth-sub-text').textContent = t(isSignup ? 'authSubSignup' : 'authSubSignin');
+  document.getElementById('auth-btn-label').textContent = t(isSignup ? 'signUp' : 'signIn');
+  document.getElementById('auth-toggle-label').textContent = t(isSignup ? 'hasAccount' : 'noAccount');
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if (!email || !password) return;
+  const btn = document.getElementById('auth-btn');
+  btn.disabled = true;
+  document.getElementById('auth-btn-label').textContent = '…';
+  let error;
+  if (authMode === 'signin') {
+    ({ error } = await sb.auth.signInWithPassword({ email, password }));
+  } else {
+    const { error: e } = await sb.auth.signUp({ email, password });
+    error = e;
+    if (!e) { showToast('✓ Check your email to confirm your account'); }
+  }
+  btn.disabled = false;
+  document.getElementById('auth-btn-label').textContent = t(authMode === 'signin' ? 'signIn' : 'signUp');
+  if (error) showToast('⚠ ' + error.message);
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  localStorage.removeItem('fv_workspace_id');
+}
+
+// ─── Workspace ────────────────────────────────────────────────────────────────
+async function loadWorkspacePicker() {
+  const { data: memberships } = await sb.from('workspace_members')
+    .select('role, workspaces(id, name, invite_code)')
+    .eq('user_id', currentUser.id);
+  const wsList = (memberships || []).map(m => ({ ...m.workspaces, role: m.role }));
+  const el = document.getElementById('ws-list');
+  if (!wsList.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="e-icon">🏗️</div><p>No workspaces yet.<br>Create one below to get started.</p></div>`;
+    return;
+  }
+  el.innerHTML = wsList.map(ws => `
+    <div class="ws-card" onclick="selectWorkspace('${ws.id}')">
+      <div>
+        <div class="ws-name">${escHtml(ws.name)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t('wsRole')[ws.role] || ws.role}</div>
+      </div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;color:var(--text-muted)"><path d="m9 18 6-6-6-6"/></svg>
+    </div>`).join('');
+}
+
+async function selectWorkspace(id) {
+  const { data } = await sb.from('workspace_members')
+    .select('role, workspaces(id, name, invite_code)')
+    .eq('user_id', currentUser.id).eq('workspace_id', id).single();
+  if (!data?.workspaces) return;
+  currentWorkspace = { ...data.workspaces, role: data.role };
+  localStorage.setItem('fv_workspace_id', id);
+  await loadItems();
+  subscribeRealtime();
+  document.getElementById('header-ws-name').textContent = currentWorkspace.name;
+  document.getElementById('main-nav').style.display = 'flex';
+  goScreen('home');
+}
+
+async function createWorkspace() {
+  const name = document.getElementById('ws-name-input').value.trim();
+  if (!name) return;
+  const code = genCode();
+  const { data: ws, error } = await sb.from('workspaces')
+    .insert({ name, invite_code: code, created_by: currentUser.id })
+    .select().single();
+  if (error || !ws) { showToast('⚠ ' + (error?.message || 'Error')); return; }
+  await sb.from('workspace_members').insert({ workspace_id: ws.id, user_id: currentUser.id, role: 'owner' });
+  document.getElementById('ws-name-input').value = '';
+  await selectWorkspace(ws.id);
+}
+
+async function joinWorkspace() {
+  const code = document.getElementById('ws-invite-input').value.trim().toUpperCase();
+  if (!code) return;
+  const { data: ws } = await sb.from('workspaces').select('id, name, invite_code').eq('invite_code', code).single();
+  if (!ws) { showToast(t('invalidCode')); return; }
+  const { data: existing } = await sb.from('workspace_members')
+    .select('workspace_id').eq('workspace_id', ws.id).eq('user_id', currentUser.id).single();
+  if (!existing) {
+    await sb.from('workspace_members').insert({ workspace_id: ws.id, user_id: currentUser.id, role: 'member' });
+  }
+  document.getElementById('ws-invite-input').value = '';
+  await selectWorkspace(ws.id);
+}
+
+async function goWorkspacePicker() {
+  await loadWorkspacePicker();
+  document.getElementById('main-nav').style.display = 'none';
+  goScreen('workspace-picker');
+}
+
+// ─── Items ────────────────────────────────────────────────────────────────────
+async function loadItems() {
+  const { data } = await sb.from('items')
+    .select('*').eq('workspace_id', currentWorkspace.id)
+    .order('created_at', { ascending: false });
+  items = data || [];
+}
+
+function subscribeRealtime() {
+  if (realtimeSub) realtimeSub.unsubscribe();
+  realtimeSub = sb.channel('items-' + currentWorkspace.id)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'items',
+      filter: `workspace_id=eq.${currentWorkspace.id}`
+    }, payload => {
+      if (payload.eventType === 'INSERT') {
+        if (!items.find(x => x.id === payload.new.id)) items.unshift(payload.new);
+      } else if (payload.eventType === 'UPDATE') {
+        const i = items.findIndex(x => x.id === payload.new.id);
+        if (i >= 0) items[i] = payload.new; else items.unshift(payload.new);
+      } else if (payload.eventType === 'DELETE') {
+        items = items.filter(x => x.id !== payload.old.id);
+      }
+      if (currentScreen === 'home') renderHome();
+      if (currentScreen === 'history') renderHistory();
+    }).subscribe();
+}
+
+async function saveItem() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('⚠ ' + t('nameLabel')); return; }
+  const btn = document.getElementById('btn-save-item');
+  btn.disabled = true;
+  const code = genCode();
+  let photo_url = null;
+  if (capturedPhoto) photo_url = await uploadPhoto(capturedPhoto, code);
+  const { data: item, error } = await sb.from('items').insert({
+    workspace_id: currentWorkspace.id,
+    code, name,
+    storage: selectedStorage,
+    location: document.getElementById('f-location').value.trim() || null,
+    photo_url,
+    date_added: today(),
+    sell_by: document.getElementById('f-sellby').value || null,
+    quantity,
+    unit: document.getElementById('f-unit').value,
+    notes: document.getElementById('f-notes').value.trim() || null,
+    status: 'active',
+  }).select().single();
+  btn.disabled = false;
+  if (error) { showToast('⚠ ' + error.message); return; }
+  showToast(t('toastSaved'));
+  showCodeModal(item);
+  resetAddForm();
+}
+
+async function uploadPhoto(base64, code) {
+  try {
+    const res = await fetch(base64);
+    const blob = await res.blob();
+    const filename = `${currentWorkspace.id}/${code}-${Date.now()}.jpg`;
+    const { error } = await sb.storage.from('item-photos').upload(filename, blob, { contentType: 'image/jpeg', upsert: true });
+    if (error) return null;
+    const { data: { publicUrl } } = sb.storage.from('item-photos').getPublicUrl(filename);
+    return publicUrl;
+  } catch { return null; }
+}
+
+async function markRemoved(id) {
+  await sb.from('items').update({ status: 'removed', removed_date: today() }).eq('id', id);
+  closeDetailModal();
+  showToast(t('toastRemoved'));
+}
+
+async function restoreItem(id) {
+  await sb.from('items').update({ status: 'active', removed_date: null }).eq('id', id);
+  closeDetailModal();
+  showToast(t('toastRestored'));
+}
+
+async function markRemovedNoModal(id) {
+  await sb.from('items').update({ status: 'removed', removed_date: today() }).eq('id', id);
+  showToast(t('toastRemoved'));
+}
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 function goScreen(name) {
@@ -942,7 +894,8 @@ function goScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
+  const navBtn = document.getElementById('nav-' + name);
+  if (navBtn) navBtn.classList.add('active');
   currentScreen = name;
   if (name === 'home') renderHome();
   if (name === 'history') renderHistory();
@@ -957,51 +910,45 @@ function toggleLang() {
   lang = lang === 'en' ? 'no' : 'en';
   localStorage.setItem('fv_lang', lang);
   applyLang();
-  renderHome();
+  if (currentScreen === 'home') renderHome();
   if (currentScreen === 'history') renderHistory();
-  if (currentScreen === 'settings') renderSettings();
 }
 
 function applyLang() {
-  document.getElementById('app-sub').textContent = t('appSub');
-  document.getElementById('lang-btn').textContent = t('langToggle');
-  document.getElementById('settings-lang-btn').textContent = t('langToggle');
-  document.getElementById('nav-lbl-home').textContent = t('navHome');
-  document.getElementById('nav-lbl-add').textContent = t('navAdd');
-  document.getElementById('nav-lbl-scan').textContent = t('navScan');
-  document.getElementById('nav-lbl-history').textContent = t('navHistory');
-  document.getElementById('nav-lbl-settings').textContent = t('navSettings');
-  document.getElementById('lbl-photo').textContent = t('photoLabel');
-  document.getElementById('pa-label').textContent = capturedPhoto ? t('changePhoto') : t('tapPhoto');
-  document.getElementById('lbl-storage-type').textContent = t('storageLabel');
-  document.getElementById('lbl-location').textContent = t('locationLabel');
-  document.getElementById('f-location').placeholder = t('locationPlaceholder');
-  document.getElementById('lbl-name').textContent = t('nameLabel');
-  document.getElementById('f-name').placeholder = t('namePlaceholder');
-  document.getElementById('lbl-quantity').textContent = t('qtyLabel');
-  document.getElementById('lbl-sellby').textContent = t('sellbyLabel');
-  document.getElementById('lbl-notes').textContent = t('notesLabel');
-  document.getElementById('f-notes').placeholder = t('notesPH');
-  document.getElementById('btn-save-label').textContent = t('saveBtn');
-  document.getElementById('scan-status').textContent = t('scanStatus');
-  document.getElementById('or-text').textContent = t('orManual');
-  document.getElementById('code-modal-title').textContent = t('codeModalTitle');
-  document.getElementById('code-hint-text').textContent = t('codeHint');
-  document.getElementById('code-scan-hint').textContent = t('codeScanHint');
-  document.getElementById('btn-done').textContent = t('btnDone');
-  document.getElementById('sl-lang').textContent = t('settingsLang');
-  document.getElementById('ss-lang').textContent = t('settingsLangSub');
-  document.getElementById('btn-export').textContent = t('exportBtn');
-  document.getElementById('btn-clear-all').textContent = t('clearAllBtn');
-  document.getElementById('about-sub').textContent = t('aboutSub');
+  const set = (id, key) => { const el = document.getElementById(id); if (el) el.textContent = t(key); };
+  set('lang-btn', 'langToggle'); set('settings-lang-btn', 'langToggle');
+  set('auth-btn-label', authMode === 'signin' ? 'signIn' : 'signUp');
+  set('auth-toggle-label', authMode === 'signin' ? 'noAccount' : 'hasAccount');
+  set('auth-sub-text', authMode === 'signin' ? 'authSubSignin' : 'authSubSignup');
+  set('lbl-email', 'emailLabel'); set('lbl-password', 'passwordLabel');
+  set('ws-picker-title', 'wsPickerTitle'); set('ws-create-title', 'wsCreateTitle');
+  set('btn-create-ws-label', 'btnCreateWs'); set('btn-join-ws', 'btnJoinWs');
+  set('ws-or-join', 'wsOrJoin'); set('btn-switch-ws', 'wsSwitchBtn');
+  set('nav-lbl-home', 'navHome'); set('nav-lbl-add', 'navAdd'); set('nav-lbl-scan', 'navScan');
+  set('nav-lbl-history', 'navHistory'); set('nav-lbl-settings', 'navSettings');
+  set('lbl-photo', 'photoLabel'); set('pa-label', capturedPhoto ? 'changePhoto' : 'tapPhoto');
+  set('lbl-storage-type', 'storageLabel'); set('lbl-location', 'locationLabel');
+  set('lbl-name', 'nameLabel'); set('lbl-quantity', 'qtyLabel');
+  set('lbl-sellby', 'sellbyLabel'); set('lbl-notes', 'notesLabel');
+  set('btn-save-label', 'saveBtn');
+  set('scan-status', 'scanStatus'); set('or-text', 'orManual');
+  set('code-modal-title', 'codeModalTitle'); set('code-hint-text', 'codeHint');
+  set('code-scan-hint', 'codeScanHint'); set('btn-done', 'btnDone');
+  set('ss-account', 'ssAccount'); set('ss-workspace', 'ssWorkspace');
+  set('ss-language-lbl', 'ssLanguage'); set('ss-data-lbl', 'ssData');
+  set('ss-signed-in', 'ssSignedIn'); set('ss-invite-lbl', 'ssInviteLbl');
+  set('ss-invite-hint', 'ssInviteHint'); set('btn-signout', 'btnSignout');
+  set('btn-export', 'btnExport');
+  const fLoc = document.getElementById('f-location'); if (fLoc) fLoc.placeholder = t('locationPH');
+  const fName = document.getElementById('f-name'); if (fName) fName.placeholder = t('namePH');
+  const fNotes = document.getElementById('f-notes'); if (fNotes) fNotes.placeholder = t('notesPH');
+  const unitSel = document.getElementById('f-unit');
+  if (unitSel) Array.from(unitSel.options).forEach(o => { o.text = t('units')[o.value] || o.value; });
   renderStorageGrid();
   renderFilterTabs();
-  // Update unit labels
-  const unitSel = document.getElementById('f-unit');
-  Array.from(unitSel.options).forEach(o => { o.text = t('units')[o.value] || o.value; });
 }
 
-// ─── Home screen ──────────────────────────────────────────────────────────────
+// ─── Home ─────────────────────────────────────────────────────────────────────
 function renderFilterTabs() {
   const tabs = [
     { id: 'all', label: t('filterAll') },
@@ -1010,98 +957,82 @@ function renderFilterTabs() {
     { id: 'shelf', label: t('filterShelf') },
     { id: 'box', label: t('filterBox') },
   ];
-  document.getElementById('filter-tabs').innerHTML = tabs.map(tab =>
+  const el = document.getElementById('filter-tabs');
+  if (el) el.innerHTML = tabs.map(tab =>
     `<button class="filter-tab ${activeFilter === tab.id ? 'active' : ''}" onclick="setFilter('${tab.id}')">${tab.label}</button>`
   ).join('');
 }
 
-function setFilter(f) {
-  activeFilter = f;
-  renderFilterTabs();
-  renderHome();
-}
+function setFilter(f) { activeFilter = f; renderFilterTabs(); renderHome(); }
 
 function renderHome() {
   const search = (document.getElementById('search-input')?.value || '').toLowerCase();
   const active = items.filter(i => i.status === 'active');
-
-  // Expiry warnings
-  const warnItems = active.filter(i => i.sellby && daysUntil(i.sellby) <= 3);
+  const warnItems = active.filter(i => i.sell_by && daysUntil(i.sell_by) <= 3);
   const ewEl = document.getElementById('expiry-warnings');
-  if (warnItems.length) {
-    ewEl.innerHTML = `<div class="expiry-strip"><span class="es-icon">⚠️</span><span class="es-text">${t('expiryWarning', warnItems.length)}</span></div>`;
-  } else {
-    ewEl.innerHTML = '';
-  }
-
-  const storageTypes = activeFilter === 'all'
-    ? STORAGE_TYPES.map(s => s.id)
-    : [activeFilter];
-
-  let html = '';
-  let hasAny = false;
-
-  for (const sType of storageTypes) {
+  if (ewEl) ewEl.innerHTML = warnItems.length
+    ? `<div class="expiry-strip"><span class="es-icon">⚠️</span><span class="es-text">${t('expiryWarning', warnItems.length)}</span></div>`
+    : '';
+  const types = activeFilter === 'all' ? STORAGE_TYPES.map(s => s.id) : [activeFilter];
+  let html = ''; let hasAny = false;
+  for (const sType of types) {
     let sItems = active.filter(i => i.storage === sType);
-    if (search) sItems = sItems.filter(i => i.name.toLowerCase().includes(search) || i.code.toLowerCase().includes(search) || (i.location||'').toLowerCase().includes(search));
+    if (search) sItems = sItems.filter(i =>
+      i.name.toLowerCase().includes(search) ||
+      i.code.toLowerCase().includes(search) ||
+      (i.location || '').toLowerCase().includes(search)
+    );
     if (!sItems.length) continue;
     hasAny = true;
     const meta = storageMeta(sType);
-    html += `<div class="storage-section">
-      <div class="section-header">
-        <div class="section-dot" style="background:${meta.color}"></div>
-        <span class="section-title">${storageLabel(sType)}</span>
-        <span class="section-count">${sItems.length}</span>
-      </div>`;
-    for (const item of sItems) {
-      html += renderItemCard(item);
-    }
-    html += `</div>`;
+    html += `<div class="storage-section"><div class="section-header">
+      <div class="section-dot" style="background:${meta.color}"></div>
+      <span class="section-title">${storageLabel(sType)}</span>
+      <span class="section-count">${sItems.length}</span>
+    </div>` + sItems.map(renderItemCard).join('') + `</div>`;
   }
-
-  if (!hasAny) {
-    html = `<div class="empty-state"><div class="e-icon">${search ? '🔍' : '📭'}</div><p>${search ? 'No items match your search.' : t('emptyHome').replace('\n', '<br>')}</p></div>`;
-  }
-  document.getElementById('items-list').innerHTML = html;
+  if (!hasAny) html = `<div class="empty-state"><div class="e-icon">${search ? '🔍' : '📭'}</div><p>${t('emptyHome').replace('\n', '<br>')}</p></div>`;
+  const el = document.getElementById('items-list');
+  if (el) el.innerHTML = html;
 }
 
 function renderItemCard(item) {
-  const thumbHtml = item.photo
-    ? `<img src="${item.photo}" alt="">`
-    : storageIcon(item.storage);
-  const days = item.sellby ? daysUntil(item.sellby) : null;
-  const expBadge = expiryBadge(item.sellby);
-  const loc = item.location ? `${item.location} · ` : '';
+  const thumb = item.photo_url
+    ? `<img src="${item.photo_url}" alt="" loading="lazy">`
+    : storageMeta(item.storage).icon;
+  const loc = item.location ? `${escHtml(item.location)} · ` : '';
   return `<div class="item-card" onclick="openDetail('${item.id}')">
-    <div class="item-thumb">${thumbHtml}</div>
+    <div class="item-thumb">${thumb}</div>
     <div class="item-body">
       <div class="item-name">${escHtml(item.name)}</div>
-      <div class="item-sub">${loc}${formatDate(item.dateAdded)}</div>
+      <div class="item-sub">${loc}${formatDate(item.date_added)}</div>
       <div class="item-badges">
         <span class="badge badge-code">${item.code}</span>
-        ${expBadge}
+        ${expiryBadge(item.sell_by)}
       </div>
     </div>
-    <div class="item-qty">${item.quantity} ${t('units')[item.unit]||item.unit}</div>
+    <div class="item-qty">${item.quantity} ${t('units')[item.unit] || item.unit}</div>
   </div>`;
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
 function renderHistory() {
-  const removed = items.filter(i => i.status === 'removed').sort((a,b) => (b.removedDate||'').localeCompare(a.removedDate||''));
+  const removed = items.filter(i => i.status === 'removed')
+    .sort((a, b) => (b.removed_date || '').localeCompare(a.removed_date || ''));
   const el = document.getElementById('history-list');
+  if (!el) return;
   if (!removed.length) {
     el.innerHTML = `<div class="empty-state"><div class="e-icon">🗂️</div><p>${t('emptyHistory')}</p></div>`;
     return;
   }
   el.innerHTML = `<h2 style="font-size:16px;font-weight:700;margin-bottom:12px">${t('historyTitle')}</h2>` +
     removed.map(item => {
-      const thumbHtml = item.photo ? `<img src="${item.photo}" alt="">` : storageIcon(item.storage);
+      const thumb = item.photo_url ? `<img src="${item.photo_url}" alt="" loading="lazy">` : storageMeta(item.storage).icon;
       return `<div class="history-card" onclick="openDetail('${item.id}')">
-        <div class="item-thumb">${thumbHtml}</div>
+        <div class="item-thumb">${thumb}</div>
         <div class="item-body">
           <div class="item-name">${escHtml(item.name)}</div>
-          <div class="item-sub">${storageLabel(item.storage)} · ${t('removedOn')}: ${formatDate(item.removedDate)}</div>
+          <div class="item-sub">${storageLabel(item.storage)} · ${t('removedOn')}: ${formatDate(item.removed_date)}</div>
           <div class="item-badges"><span class="badge badge-code">${item.code}</span></div>
         </div>
       </div>`;
@@ -1110,7 +1041,9 @@ function renderHistory() {
 
 // ─── Add item ─────────────────────────────────────────────────────────────────
 function renderStorageGrid() {
-  document.getElementById('storage-grid').innerHTML = STORAGE_TYPES.map(s =>
+  const el = document.getElementById('storage-grid');
+  if (!el) return;
+  el.innerHTML = STORAGE_TYPES.map(s =>
     `<div class="storage-opt ${selectedStorage === s.id ? 'sel' : ''}" onclick="selectStorage('${s.id}')">
       <div class="so-icon">${s.icon}</div>
       <div class="so-label">${storageLabel(s.id)}</div>
@@ -1118,21 +1051,13 @@ function renderStorageGrid() {
   ).join('');
 }
 
-function selectStorage(id) {
-  selectedStorage = id;
-  renderStorageGrid();
-}
+function selectStorage(id) { selectedStorage = id; renderStorageGrid(); }
 
 function resetAddForm() {
-  capturedPhoto = null;
-  quantity = 1;
-  selectedStorage = 'freezer';
-  editingId = null;
+  capturedPhoto = null; quantity = 1; selectedStorage = 'freezer';
   document.getElementById('photo-area').innerHTML = `<span class="pa-icon">📷</span><span class="pa-label" id="pa-label">${t('tapPhoto')}</span>`;
-  document.getElementById('f-name').value = '';
-  document.getElementById('f-location').value = '';
-  document.getElementById('f-notes').value = '';
-  document.getElementById('f-sellby').value = '';
+  document.getElementById('photo-area').onclick = triggerPhotoCapture;
+  ['f-name', 'f-location', 'f-notes', 'f-sellby'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('f-unit').value = 'pcs';
   document.getElementById('qty-display').textContent = '1';
   renderStorageGrid();
@@ -1143,22 +1068,17 @@ function changeQty(delta) {
   document.getElementById('qty-display').textContent = quantity;
 }
 
-function triggerPhotoCapture() {
-  document.getElementById('photo-input').click();
-}
+function triggerPhotoCapture() { document.getElementById('photo-input').click(); }
 
 function handlePhotoInput(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    capturedPhoto = ev.target.result;
-    // Compress
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX = 800;
-      let w = img.width, h = img.height;
+      const MAX = 800; let w = img.width, h = img.height;
       if (w > h && w > MAX) { h = h * MAX / w; w = MAX; }
       else if (h > MAX) { w = w * MAX / h; h = MAX; }
       canvas.width = w; canvas.height = h;
@@ -1173,82 +1093,42 @@ function handlePhotoInput(e) {
   reader.readAsDataURL(file);
 }
 
-function saveItem() {
-  const name = document.getElementById('f-name').value.trim();
-  if (!name) { showToast('⚠ ' + t('nameLabel')); return; }
-  const code = genCode();
-  const item = {
-    id: crypto.randomUUID(),
-    code,
-    name,
-    storage: selectedStorage,
-    location: document.getElementById('f-location').value.trim(),
-    photo: capturedPhoto,
-    dateAdded: today(),
-    sellby: document.getElementById('f-sellby').value || null,
-    quantity,
-    unit: document.getElementById('f-unit').value,
-    notes: document.getElementById('f-notes').value.trim(),
-    status: 'active',
-    removedDate: null,
-  };
-  items.unshift(item);
-  saveItems();
-  showToast(t('toastSaved'));
-  showCodeModal(item);
-  resetAddForm();
-}
-
 // ─── Code modal ───────────────────────────────────────────────────────────────
 function showCodeModal(item) {
   document.getElementById('code-display-val').textContent = item.code;
   document.getElementById('code-modal').classList.add('open');
-  // Generate QR
-  const canvas = document.getElementById('qr-canvas');
-  QRCode.toCanvas(canvas, item.code, { width: 140, margin: 1, color: { dark: '#000', light: '#fff' } }, () => {});
+  QRCode.toCanvas(document.getElementById('qr-canvas'), item.code,
+    { width: 140, margin: 1, color: { dark: '#000', light: '#fff' } }, () => {});
 }
-
 function closeCodeModal() {
   document.getElementById('code-modal').classList.remove('open');
   goScreen('home');
 }
 
-// ─── Item detail modal ────────────────────────────────────────────────────────
+// ─── Detail modal ─────────────────────────────────────────────────────────────
 function openDetail(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   const isRemoved = item.status === 'removed';
   const meta = storageMeta(item.storage);
-  const days = item.sellby ? daysUntil(item.sellby) : null;
-
-  let photoHtml = item.photo
-    ? `<div class="detail-photo-wrap"><img src="${item.photo}" alt="${escHtml(item.name)}"></div>`
-    : `<div class="detail-photo-wrap">${storageIcon(item.storage)}</div>`;
-
-  let expiryHtml = '';
-  if (item.sellby) {
-    expiryHtml = `<div class="detail-cell">
-      <div class="dc-key">${t('detailBestBefore')}</div>
-      <div class="dc-val">${formatDate(item.sellby)}<br>${expiryBadge(item.sellby)}</div>
-    </div>`;
-  }
-
-  let actionsHtml = '';
-  if (!isRemoved) {
-    actionsHtml = `
-      <button class="btn btn-warning" style="margin-bottom:10px" onclick="fasttackFromDetail('${id}')">
-        ${t('btnFasttrack')}
-      </button>
-      <button class="btn btn-secondary" onclick="markRemoved('${id}')">
-        ${t('btnMarkRemoved')}
-      </button>`;
-  } else {
-    actionsHtml = `<button class="btn btn-success" onclick="restoreItem('${id}')">${t('btnRestore')}</button>`;
-  }
+  const photoHtml = item.photo_url
+    ? `<div class="detail-photo-wrap"><img src="${item.photo_url}" alt="${escHtml(item.name)}"></div>`
+    : `<div class="detail-photo-wrap">${meta.icon}</div>`;
+  const expiryHtml = item.sell_by ? `<div class="detail-cell">
+    <div class="dc-key">${t('detailBestBefore')}</div>
+    <div class="dc-val">${formatDate(item.sell_by)}<br>${expiryBadge(item.sell_by)}</div>
+  </div>` : '';
+  const actionsHtml = !isRemoved
+    ? `<button class="btn btn-warning" style="margin-bottom:10px" onclick="fasttackFromDetail('${id}')">${t('btnFasttrack')}</button>
+       <button class="btn btn-secondary" style="margin-bottom:10px" onclick="markRemoved('${id}')">${t('btnMarkRemoved')}</button>`
+    : `<button class="btn btn-success" style="margin-bottom:10px" onclick="restoreItem('${id}')">${t('btnRestore')}</button>`;
 
   document.getElementById('detail-content').innerHTML = `
     ${photoHtml}
     <div class="modal-title">${escHtml(item.name)}</div>
+    <div style="margin-bottom:12px;text-align:center">
+      <canvas id="detail-qr" style="border-radius:6px;background:white;padding:8px"></canvas>
+    </div>
     <div class="detail-grid">
       <div class="detail-cell full">
         <div class="dc-key">${t('detailCode')}</div>
@@ -1256,15 +1136,11 @@ function openDetail(id) {
       </div>
       <div class="detail-cell">
         <div class="dc-key">${t('detailStorage')}</div>
-        <div class="dc-val">
-          <span class="storage-pill" style="background:${meta.color}22;color:${meta.color}">
-            ${meta.icon} ${storageLabel(item.storage)}
-          </span>
-        </div>
+        <div class="dc-val"><span class="storage-pill" style="background:${meta.color}22;color:${meta.color}">${meta.icon} ${storageLabel(item.storage)}</span></div>
       </div>
       <div class="detail-cell">
         <div class="dc-key">${t('detailAdded')}</div>
-        <div class="dc-val">${formatDate(item.dateAdded)}</div>
+        <div class="dc-val">${formatDate(item.date_added)}</div>
       </div>
       <div class="detail-cell">
         <div class="dc-key">${t('detailLocation')}</div>
@@ -1272,71 +1148,30 @@ function openDetail(id) {
       </div>
       <div class="detail-cell">
         <div class="dc-key">${t('detailQty')}</div>
-        <div class="dc-val">${item.quantity} ${t('units')[item.unit]||item.unit}</div>
+        <div class="dc-val">${item.quantity} ${t('units')[item.unit] || item.unit}</div>
       </div>
       ${expiryHtml}
       ${item.notes ? `<div class="detail-cell full"><div class="dc-key">${t('detailNotes')}</div><div class="dc-val">${escHtml(item.notes)}</div></div>` : ''}
-      ${isRemoved ? `<div class="detail-cell full"><div class="dc-key">${t('removedOn')}</div><div class="dc-val">${formatDate(item.removedDate)}</div></div>` : ''}
+      ${isRemoved ? `<div class="detail-cell full"><div class="dc-key">${t('removedOn')}</div><div class="dc-val">${formatDate(item.removed_date)}</div></div>` : ''}
     </div>
     ${actionsHtml}
-    <div style="height:10px"></div>
-    <button class="btn btn-secondary btn-sm" onclick="closeDetailModal()">${t('btnClose')}</button>
-  `;
-
-  // Generate mini QR in detail
-  const qrWrap = document.createElement('div');
-  qrWrap.style.cssText = 'margin-bottom:12px';
-  const qrC = document.createElement('canvas');
-  document.getElementById('detail-content').querySelector('.modal-title').after(qrWrap);
-  qrWrap.appendChild(qrC);
-  QRCode.toCanvas(qrC, item.code, { width: 100, margin: 1, color: { dark: '#000', light: '#fff' } }, () => {});
+    <button class="btn btn-secondary btn-sm" onclick="closeDetailModal()">${t('btnClose')}</button>`;
 
   document.getElementById('detail-modal').classList.add('open');
+  QRCode.toCanvas(document.getElementById('detail-qr'), item.code,
+    { width: 100, margin: 1, color: { dark: '#000', light: '#fff' } }, () => {});
 }
 
-function closeDetailModal() {
-  document.getElementById('detail-modal').classList.remove('open');
-}
-
-function fasttackFromDetail(id) {
-  markRemoved(id);
-  closeDetailModal();
-}
-
-function markRemoved(id) {
-  const item = items.find(i => i.id === id);
-  if (!item) return;
-  item.status = 'removed';
-  item.removedDate = today();
-  saveItems();
-  closeDetailModal();
-  renderHome();
-  showToast(t('toastRemoved'));
-}
-
-function restoreItem(id) {
-  const item = items.find(i => i.id === id);
-  if (!item) return;
-  item.status = 'active';
-  item.removedDate = null;
-  saveItems();
-  closeDetailModal();
-  renderHistory();
-  showToast(t('toastRestored'));
-}
-
-function copyCode(code) {
-  navigator.clipboard.writeText(code).then(() => showToast(t('toastCopied')));
-}
+function closeDetailModal() { document.getElementById('detail-modal').classList.remove('open'); }
+function fasttackFromDetail(id) { markRemoved(id); closeDetailModal(); }
+function copyCode(code) { navigator.clipboard.writeText(code).then(() => showToast(t('toastCopied'))); }
 
 // ─── Scanner ──────────────────────────────────────────────────────────────────
-let scanMode = 'lookup'; // 'lookup' | 'fasttrack'
-
 function startScan() {
   document.getElementById('scan-result').innerHTML = '';
   document.getElementById('manual-code-input').value = '';
   if (!navigator.mediaDevices?.getUserMedia) {
-    document.getElementById('scan-status').textContent = 'Camera not available on this device.';
+    document.getElementById('scan-status').textContent = 'Camera not available.';
     return;
   }
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -1345,18 +1180,16 @@ function startScan() {
       const video = document.getElementById('scan-video');
       video.srcObject = stream;
       video.play();
-      video.addEventListener('loadeddata', () => { scanTick(); });
+      video.addEventListener('loadeddata', scanTick, { once: true });
     })
-    .catch(err => {
-      document.getElementById('scan-status').textContent = 'Camera access denied. Use manual code entry.';
-    });
+    .catch(() => { document.getElementById('scan-status').textContent = 'Camera access denied. Use manual entry.'; });
 }
 
 function stopScan() {
   if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
   if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-  const video = document.getElementById('scan-video');
-  if (video) video.srcObject = null;
+  const v = document.getElementById('scan-video');
+  if (v) v.srcObject = null;
 }
 
 function scanTick() {
@@ -1364,16 +1197,11 @@ function scanTick() {
   const canvas = document.getElementById('scan-canvas');
   if (!video || !canvas || !scanStream) return;
   if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const imgData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
     const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
-    if (code && code.data) {
-      handleCodeFound(code.data.trim().toUpperCase());
-      return;
-    }
+    if (code?.data) { handleCodeFound(code.data.trim().toUpperCase()); return; }
   }
   scanAnimFrame = requestAnimationFrame(scanTick);
 }
@@ -1381,126 +1209,92 @@ function scanTick() {
 function handleCodeFound(code) {
   stopScan();
   const item = items.find(i => i.code === code && i.status === 'active');
-  const removedItem = items.find(i => i.code === code && i.status === 'removed');
-  const resultEl = document.getElementById('scan-result');
-
-  if (!item && !removedItem) {
-    resultEl.innerHTML = `<div class="ft-result"><div class="ft-name">❓</div><div class="ft-meta">${t('noItem')}</div></div>
-      <button class="btn btn-secondary" onclick="startScan()">${t('navScan')} again</button>`;
+  const removed = items.find(i => i.code === code && i.status === 'removed');
+  const el = document.getElementById('scan-result');
+  if (!item && !removed) {
+    el.innerHTML = `<div class="ft-result"><div style="font-size:32px">❓</div><div class="ft-meta">${t('noItem')}</div></div>
+      <button class="btn btn-secondary" onclick="startScan()">Scan again</button>`;
     return;
   }
-  if (removedItem) {
-    resultEl.innerHTML = `<div class="ft-result">
-      <div class="ft-name">${escHtml(removedItem.name)}</div>
-      <div class="ft-meta">${t('alreadyRemoved')}</div>
-    </div>
-    <button class="btn btn-secondary" onclick="startScan()">Scan again</button>`;
+  if (removed) {
+    el.innerHTML = `<div class="ft-result"><div class="ft-name">${escHtml(removed.name)}</div><div class="ft-meta">${t('alreadyRemoved')}</div></div>
+      <button class="btn btn-secondary" onclick="startScan()">Scan again</button>`;
     return;
   }
-
-  // Show fasttrack result
   const meta = storageMeta(item.storage);
-  const days = item.sellby ? daysUntil(item.sellby) : null;
-  resultEl.innerHTML = `
+  el.innerHTML = `
     <div class="ft-result">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">${t('fasttrackTitle')}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${t('btnFasttrack')}</div>
       <div class="ft-name">${escHtml(item.name)}</div>
       <div class="ft-meta">${storageLabel(item.storage)}${item.location ? ' · ' + escHtml(item.location) : ''}</div>
-      <div class="ft-meta" style="margin-top:4px">${t('detailAdded')}: ${formatDate(item.dateAdded)}</div>
-      ${item.sellby ? `<div class="ft-meta" style="margin-top:4px">${t('detailBestBefore')}: ${formatDate(item.sellby)} ${expiryBadge(item.sellby)}</div>` : ''}
+      <div class="ft-meta" style="margin-top:4px">${t('detailAdded')}: ${formatDate(item.date_added)}</div>
+      ${item.sell_by ? `<div class="ft-meta" style="margin-top:4px">${t('detailBestBefore')}: ${formatDate(item.sell_by)} ${expiryBadge(item.sell_by)}</div>` : ''}
     </div>
     <button class="btn btn-warning" style="margin-bottom:10px" onclick="fasttackScan('${item.id}')">
       ${t('btnFasttrack')}
     </button>
-    <button class="btn btn-secondary btn-sm" style="margin-bottom:8px" onclick="openDetailFromScan('${item.id}')">
-      View details
-    </button>
+    <button class="btn btn-secondary btn-sm" style="margin-bottom:8px" onclick="openDetail('${item.id}')">View details</button>
     <button class="btn btn-secondary btn-sm" onclick="startScan()">Scan again</button>`;
 }
 
-function fasttackScan(id) {
-  markRemovedNoModal(id);
+async function fasttackScan(id) {
+  await markRemovedNoModal(id);
   document.getElementById('scan-result').innerHTML = `
-    <div class="ft-result">
-      <div style="font-size:32px;margin-bottom:8px">✅</div>
-      <div class="ft-name">${t('toastRemoved')}</div>
-    </div>
+    <div class="ft-result"><div style="font-size:36px;margin-bottom:8px">✅</div><div class="ft-name">${t('toastRemoved')}</div></div>
     <button class="btn btn-secondary" style="margin-top:8px" onclick="startScan()">Scan again</button>`;
 }
 
-function markRemovedNoModal(id) {
-  const item = items.find(i => i.id === id);
-  if (!item) return;
-  item.status = 'removed';
-  item.removedDate = today();
-  saveItems();
-  showToast(t('toastRemoved'));
-}
-
-function openDetailFromScan(id) {
-  openDetail(id);
-}
-
 function lookupManualCode() {
-  const raw = document.getElementById('manual-code-input').value.trim().toUpperCase();
-  if (!raw) return;
-  handleCodeFound(raw);
+  const code = document.getElementById('manual-code-input').value.trim().toUpperCase();
+  if (code) handleCodeFound(code);
 }
 
-// Allow Enter key for manual code lookup
 document.getElementById('manual-code-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') lookupManualCode();
 });
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function renderSettings() {
-  // nothing extra needed – applyLang handles labels
+  if (!currentUser || !currentWorkspace) return;
+  document.getElementById('settings-email').textContent = currentUser.email;
+  document.getElementById('settings-ws-name').textContent = currentWorkspace.name;
+  document.getElementById('settings-ws-role').textContent = t('wsRole')[currentWorkspace.role] || currentWorkspace.role;
+  document.getElementById('settings-invite-code').textContent = currentWorkspace.invite_code;
+}
+
+function copyInviteCode() {
+  if (!currentWorkspace) return;
+  navigator.clipboard.writeText(currentWorkspace.invite_code).then(() => showToast(t('toastInviteCopied')));
 }
 
 function exportData() {
   const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `frosty-backup-${today()}.json`;
+  a.download = `frosty-${currentWorkspace?.name || 'backup'}-${today()}.json`;
   a.click();
 }
 
-function confirmClearAll() {
-  if (confirm(t('clearConfirm'))) {
-    items = [];
-    saveItems();
-    showToast(t('toastCleared'));
-    renderHome();
-  }
-}
+// ─── Modal close on backdrop ──────────────────────────────────────────────────
+document.getElementById('detail-modal').addEventListener('click', function(e) { if (e.target === this) closeDetailModal(); });
+document.getElementById('code-modal').addEventListener('click', function(e) { if (e.target === this) closeCodeModal(); });
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 let toastTimer = null;
 function showToast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
 }
 
-// ─── Util ──────────────────────────────────────────────────────────────────────
+// ─── Util ─────────────────────────────────────────────────────────────────────
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Close modals on backdrop click
-document.getElementById('detail-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeDetailModal();
-});
-document.getElementById('code-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeCodeModal();
-});
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
-applyLang();
-renderHome();
-renderStorageGrid();
+// ─── Start ────────────────────────────────────────────────────────────────────
+init();
 </script>
 </body>
 </html>
