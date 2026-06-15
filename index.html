@@ -854,6 +854,7 @@ async function saveItem() {
   }).select().single();
   btn.disabled = false;
   if (error) { showToast('⚠ ' + error.message); return; }
+  items.unshift(item);
   showToast(t('toastSaved'));
   showCodeModal(item);
   resetAddForm();
