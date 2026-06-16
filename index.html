@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -366,18 +367,27 @@
 
 <!-- Scan screen -->
 <div class="screen" id="screen-scan">
+  <!-- Mode toggle -->
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="filter-tab active" id="mode-qr" onclick="setScanMode('qr')" style="flex:1;justify-content:center">📷 QR code</button>
+    <button class="filter-tab" id="mode-ocr" onclick="setScanMode('ocr')" style="flex:1;justify-content:center">🔤 Scan text</button>
+  </div>
   <div class="scan-area">
     <video id="scan-video" autoplay playsinline muted></video>
     <canvas id="scan-canvas"></canvas>
     <div class="scan-overlay">
-      <div class="scan-frame">
+      <div class="scan-frame" id="scan-frame-box">
         <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
         <div class="scan-corner bl"></div><div class="scan-corner br"></div>
-        <div class="scan-line-anim"></div>
+        <div class="scan-line-anim" id="scan-anim-line"></div>
       </div>
     </div>
     <div class="scan-status" id="scan-status">Scanning for QR code…</div>
   </div>
+  <!-- OCR capture button (hidden in QR mode) -->
+  <button class="btn btn-primary" id="ocr-capture-btn" onclick="captureForOCR()" style="display:none;margin-bottom:12px">
+    📸 Capture &amp; read code
+  </button>
   <div class="or-divider" id="or-text">or enter code manually</div>
   <div class="inline-input-row">
     <input type="text" class="form-input" id="manual-code-input" placeholder="ABC123" maxlength="7" style="font-family:monospace;font-size:18px;letter-spacing:4px;text-transform:uppercase">
@@ -1168,14 +1178,110 @@ function fasttackFromDetail(id) { markRemoved(id); closeDetailModal(); }
 function copyCode(code) { navigator.clipboard.writeText(code).then(() => showToast(t('toastCopied'))); }
 
 // ─── Scanner ──────────────────────────────────────────────────────────────────
+let scanMode = 'qr'; // 'qr' | 'ocr'
+let tesseractWorker = null;
+
+function setScanMode(mode) {
+  scanMode = mode;
+  document.getElementById('mode-qr').classList.toggle('active', mode === 'qr');
+  document.getElementById('mode-ocr').classList.toggle('active', mode === 'ocr');
+  document.getElementById('ocr-capture-btn').style.display = mode === 'ocr' ? 'flex' : 'none';
+  document.getElementById('scan-anim-line').style.display = mode === 'qr' ? 'block' : 'none';
+  document.getElementById('scan-result').innerHTML = '';
+  if (mode === 'qr') {
+    document.getElementById('scan-status').textContent = t('scanStatus');
+    // restart QR tick if camera already running
+    if (scanStream) { if (scanAnimFrame) cancelAnimationFrame(scanAnimFrame); scanTick(); }
+  } else {
+    if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
+    document.getElementById('scan-status').textContent = 'Hold code steady, then tap Capture';
+    // pre-load Tesseract worker in background
+    initTesseract();
+  }
+}
+
+async function initTesseract() {
+  if (tesseractWorker) return;
+  try {
+    tesseractWorker = await Tesseract.createWorker('eng', 1, {
+      logger: () => {}
+    });
+    await tesseractWorker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+    });
+  } catch (e) { tesseractWorker = null; }
+}
+
+async function captureForOCR() {
+  const video = document.getElementById('scan-video');
+  const canvas = document.getElementById('scan-canvas');
+  if (!video || !scanStream) return;
+
+  // Capture frame
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  document.getElementById('scan-status').textContent = 'Reading text…';
+  document.getElementById('ocr-capture-btn').disabled = true;
+
+  try {
+    if (!tesseractWorker) await initTesseract();
+    if (!tesseractWorker) throw new Error('OCR not available');
+
+    const { data: { text } } = await tesseractWorker.recognize(canvas);
+
+    // Extract all 6-char sequences from our charset
+    const matches = text.toUpperCase().replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, ' ')
+      .split(/\s+/).filter(w => w.length === 6);
+
+    if (!matches.length) {
+      document.getElementById('scan-status').textContent = 'No code found — try again';
+      document.getElementById('ocr-capture-btn').disabled = false;
+      return;
+    }
+
+    // Try each match against items
+    for (const candidate of matches) {
+      const hit = items.find(i => i.code === candidate);
+      if (hit) { handleCodeFound(candidate); return; }
+    }
+
+    // Show best candidate and let user confirm
+    const best = matches[0];
+    document.getElementById('scan-status').textContent = `Read: ${best}`;
+    document.getElementById('scan-result').innerHTML = `
+      <div class="ft-result">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">Text detected</div>
+        <div class="dc-code" style="font-size:28px;letter-spacing:6px">${best}</div>
+      </div>
+      <button class="btn btn-primary" style="margin-bottom:8px" onclick="handleCodeFound('${best}')">Look up this code</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetOCR()">Try again</button>`;
+    document.getElementById('ocr-capture-btn').disabled = false;
+  } catch (e) {
+    document.getElementById('scan-status').textContent = 'OCR failed — try manual entry';
+    document.getElementById('ocr-capture-btn').disabled = false;
+  }
+}
+
+function resetOCR() {
+  document.getElementById('scan-result').innerHTML = '';
+  document.getElementById('scan-status').textContent = 'Hold code steady, then tap Capture';
+}
+
 function startScan() {
+  scanMode = 'qr';
+  document.getElementById('mode-qr').classList.add('active');
+  document.getElementById('mode-ocr').classList.remove('active');
+  document.getElementById('ocr-capture-btn').style.display = 'none';
+  document.getElementById('scan-anim-line').style.display = 'block';
   document.getElementById('scan-result').innerHTML = '';
   document.getElementById('manual-code-input').value = '';
   if (!navigator.mediaDevices?.getUserMedia) {
     document.getElementById('scan-status').textContent = 'Camera not available.';
     return;
   }
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } } })
     .then(stream => {
       scanStream = stream;
       const video = document.getElementById('scan-video');
@@ -1194,6 +1300,7 @@ function stopScan() {
 }
 
 function scanTick() {
+  if (scanMode !== 'qr') return;
   const video = document.getElementById('scan-video');
   const canvas = document.getElementById('scan-canvas');
   if (!video || !canvas || !scanStream) return;
