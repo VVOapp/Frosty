@@ -1217,8 +1217,19 @@ function startCamera() {
     });
 }
 
+function cropCentre(srcCanvas) {
+  const size = Math.min(srcCanvas.width, srcCanvas.height) * 0.6;
+  const x = (srcCanvas.width - size) / 2;
+  const y = (srcCanvas.height - size) / 2;
+  const c = document.createElement('canvas');
+  c.width = 640; c.height = 640;
+  c.getContext('2d').drawImage(srcCanvas, x, y, size, size, 0, 0, 640, 640);
+  return c;
+}
+
 async function callGemini(canvas) {
-  const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  const cropped = cropCentre(canvas);
+  const base64 = cropped.toDataURL('image/jpeg', 0.9).split(',')[1];
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
     {
@@ -1226,10 +1237,10 @@ async function callGemini(canvas) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [
-          { text: 'Look at this image. Find any handwritten or printed 6-character code made only of uppercase letters (A-Z but NOT the letter I or O) and digits (2-9, NOT 0 or 1). Return ONLY the 6 characters with no spaces or punctuation. If no clear 6-character code is visible return the word NONE.' },
+          { text: 'Read all the text and numbers visible in this image. Return exactly what you see, letter by letter and digit by digit. Do not add punctuation or explanation.' },
           { inline_data: { mime_type: 'image/jpeg', data: base64 } }
         ]}],
-        generationConfig: { maxOutputTokens: 10, temperature: 0 }
+        generationConfig: { maxOutputTokens: 30, temperature: 0 }
       })
     }
   );
