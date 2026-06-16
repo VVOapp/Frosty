@@ -1186,15 +1186,35 @@ function setScanMode(mode) {
   document.getElementById('mode-ocr').classList.toggle('active', mode === 'ocr');
   document.getElementById('scan-anim-line').style.display = mode === 'qr' ? 'block' : 'none';
   document.getElementById('scan-result').innerHTML = '';
+  stopAIScan();
+  if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
   if (mode === 'qr') {
-    stopAIScan();
     document.getElementById('scan-status').textContent = t('scanStatus');
-    if (scanStream) { if (scanAnimFrame) cancelAnimationFrame(scanAnimFrame); scanTick(); }
+    if (scanStream) scanTick(); else startCamera();
   } else {
-    if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
     document.getElementById('scan-status').textContent = '🤖 AI scanning… hold code steady';
-    if (scanStream) startAIScan();
+    if (scanStream) startAIScan(); else startCamera();
   }
+}
+
+function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    document.getElementById('scan-status').textContent = 'Camera not available on this device.';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } } })
+    .then(stream => {
+      scanStream = stream;
+      const video = document.getElementById('scan-video');
+      video.srcObject = stream;
+      video.play();
+      video.addEventListener('loadeddata', () => {
+        if (scanMode === 'qr') scanTick(); else startAIScan();
+      }, { once: true });
+    })
+    .catch(err => {
+      document.getElementById('scan-status').textContent = 'Camera access denied — check your browser settings.';
+    });
 }
 
 async function callGemini(canvas) {
@@ -1256,25 +1276,11 @@ function startScan() {
   scanMode = 'qr';
   document.getElementById('mode-qr').classList.add('active');
   document.getElementById('mode-ocr').classList.remove('active');
-  document.getElementById('ocr-capture-btn').style.display = 'none';
   document.getElementById('scan-anim-line').style.display = 'block';
   document.getElementById('scan-result').innerHTML = '';
   document.getElementById('manual-code-input').value = '';
-  if (!navigator.mediaDevices?.getUserMedia) {
-    document.getElementById('scan-status').textContent = 'Camera not available.';
-    return;
-  }
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } } })
-    .then(stream => {
-      scanStream = stream;
-      const video = document.getElementById('scan-video');
-      video.srcObject = stream;
-      video.play();
-      video.addEventListener('loadeddata', () => {
-        if (scanMode === 'qr') scanTick(); else startAIScan();
-      }, { once: true });
-    })
-    .catch(() => { document.getElementById('scan-status').textContent = 'Camera access denied. Use manual entry.'; });
+  document.getElementById('scan-status').textContent = t('scanStatus');
+  startCamera();
 }
 
 function stopScan() {
