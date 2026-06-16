@@ -1254,17 +1254,30 @@ async function aiScanTick() {
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
+  const statusEl = document.getElementById('scan-status');
+  statusEl.textContent = '🤖 Asking AI…';
   try {
     const result = await callGemini(canvas);
     if (!aiScanning) return;
-    const CHARSET = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
-    if (CHARSET.test(result)) {
+    statusEl.textContent = `AI read: "${result}"`;
+    // Extract any 6-char run of valid characters from the response
+    const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const clean = result.replace(new RegExp(`[^${CHARS}]`, 'g'), ' ').trim();
+    const match = clean.split(/\s+/).find(w => w.length === 6);
+    if (match) {
       stopAIScan();
-      handleCodeFound(result);
+      handleCodeFound(match);
       return;
     }
-  } catch (e) { /* continue scanning */ }
-  if (aiScanning) aiScanTimer = setTimeout(aiScanTick, 2500);
+  } catch (e) {
+    statusEl.textContent = `⚠ Error: ${e.message}`;
+  }
+  if (aiScanning) {
+    aiScanTimer = setTimeout(() => {
+      if (aiScanning) document.getElementById('scan-status').textContent = '🤖 AI scanning… hold code steady';
+      aiScanTick();
+    }, 2500);
+  }
 }
 
 function stopAIScan() {
